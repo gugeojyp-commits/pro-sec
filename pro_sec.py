@@ -14,7 +14,7 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 # ⚠️ 세션 강제 초기화 루틴 (버전 변경 시 캐시 리셋)
 # -----------------------------------------------------------------------------
-APP_VERSION = "v2_sound_change_2round_fixed"
+APP_VERSION = "v3_enter_submit_applied"
 if st.session_state.get("app_version") != APP_VERSION:
     st.session_state.clear()
     st.session_state.app_version = APP_VERSION
@@ -319,7 +319,7 @@ RAW_QUIZ_DATA = {
             "id": 29,
             "type": "short",
             "question": "[바탕다지기] 문장의 괄호 안 알맞은 발음을 순서대로 적으시오: '색연필([ 1 ])로 꽃잎([ 2 ])도 그렸다.'",
-            "answer": ["생년필, 꼰닙", "생년필,꼰닙", "[생년필], [꼰닙]". "[생년필],"[꼰닙]"],
+            "answer": ["생년필, 꼰닙", "생년필,꼰닙", "[생년필], [꼰닙]", "[생년필],[꼰닙]"],
             "explanation": "'색연필'은 ㄴ첨가 및 비음화로 [생년필], '꽃잎'은 끝소리/ㄴ첨가 및 비음화로 [꼰닙]이 됩니다."
         },
         {
@@ -366,7 +366,6 @@ def reset_full_quiz():
     shuffled_list = []
     for category_name, items in RAW_QUIZ_DATA.items():
         category_items = items.copy()
-        # 카테고리 내 문항 셔플
         random.shuffle(category_items)
         for item in category_items:
             item_copy = item.copy()
@@ -401,20 +400,22 @@ if not st.session_state.user_info_submitted:
     st.subheader("👤 감일고 학생 정보 입력 (2차시)")
     st.write("학번과 이름을 정확히 입력하세요. 잘못 기재하면 참여하지 않은 것으로 처리됩니다. (총 32문항)")
     
-    s_id = st.text_input("학번을 입력하세요. (예: 20101)", key="input_s_id")
-    s_name = st.text_input("이름을 입력하세요.", key="input_s_name")
-    
-    if st.button("🚀 2차시 평가 시작하기", use_container_width=True):
-        if s_id.strip() and s_name.strip():
-            st.session_state.student_id = s_id.strip()
-            st.session_state.student_name = s_name.strip()
-            st.session_state.user_info_submitted = True
-            st.rerun()
-        else:
-            st.warning("⚠️ 학번과 이름을 모두 입력해 주세요!")
+    with st.form(key="student_info_form"):
+        s_id = st.text_input("학번을 입력하세요. (예: 20101)", key="input_s_id")
+        s_name = st.text_input("이름을 입력하세요.", key="input_s_name")
+        start_button = st.form_submit_button("🚀 2차시 평가 시작하기 (Enter)", use_container_width=True)
+        
+        if start_button:
+            if s_id.strip() and s_name.strip():
+                st.session_state.student_id = s_id.strip()
+                st.session_state.student_name = s_name.strip()
+                st.session_state.user_info_submitted = True
+                st.rerun()
+            else:
+                st.warning("⚠️ 학번과 이름을 모두 입력해 주세요!")
 
 # -----------------------------------------------------------------------------
-# 3. 개별 문제 풀이 화면
+# 3. 개별 문제 풀이 화면 (st.form으로 엔터키 자동 제출 활성화)
 # -----------------------------------------------------------------------------
 elif not st.session_state.quiz_finished:
     quiz_list = st.session_state.quiz_list
@@ -450,16 +451,31 @@ elif not st.session_state.quiz_finished:
 
     saved_ans = st.session_state.user_answers.get(curr_q["id"], "")
     
-    if curr_q["type"] == "short":
-        user_input = st.text_input("정답 입력:", value=saved_ans, placeholder="답안을 입력하세요...", key=f"q_input_{curr_q['id']}")
-    else:
-        opts = curr_q["options"]
-        default_idx = opts.index(saved_ans) if saved_ans in opts else None
-        user_input = st.radio("알맞은 답 선택:", opts, index=default_idx, key=f"q_input_{curr_q['id']}", label_visibility="collapsed")
+    # ── [엔터키 지원] Form 블록으로 묶기 ──
+    with st.form(key=f"quiz_form_{curr_q['id']}"):
+        if curr_q["type"] == "short":
+            user_input = st.text_input(
+                "정답 입력:", 
+                value=saved_ans, 
+                placeholder="답안을 입력하고 Enter를 누르세요...", 
+                key=f"q_input_{curr_q['id']}"
+            )
+        else:
+            opts = curr_q["options"]
+            default_idx = opts.index(saved_ans) if saved_ans in opts else None
+            user_input = st.radio(
+                "알맞은 답 선택:", 
+                opts, 
+                index=default_idx, 
+                key=f"q_input_{curr_q['id']}", 
+                label_visibility="collapsed"
+            )
 
-    st.write("")
+        st.write("")
+        form_submitted = st.form_submit_button("🔍 정답 확인 (Enter)", use_container_width=True)
 
-    if st.button("🔍 정답 확인 및 해설 보기", key=f"check_btn_{curr_q['id']}", use_container_width=True):
+    # 채점 로직 (Enter를 치거나 확인 버튼 클릭 시 실행)
+    if form_submitted:
         if user_input:
             st.session_state.user_answers[curr_q["id"]] = user_input
             st.session_state.checked_status[curr_q["id"]] = True
@@ -480,6 +496,7 @@ elif not st.session_state.quiz_finished:
         else:
             st.warning("⚠️ 먼저 정답을 입력하거나 선택해 주세요.")
 
+    # 해설 및 다음 문제 이동 버튼 출력부
     if st.session_state.checked_status.get(curr_q["id"], False):
         ans = st.session_state.user_answers.get(curr_q["id"], "")
         is_passed = st.session_state.passed_status.get(curr_q["id"], False)
@@ -492,7 +509,7 @@ elif not st.session_state.quiz_finished:
         st.info(f"💡 **교과서 원리 해설:**\n\n{curr_q['explanation']}")
 
         st.write("")
-        if st.session_state.passed_status.get(curr_q["id"], False):
+        if is_passed:
             if curr_idx < total_q - 1:
                 if st.button("➡️ 다음 문제로 이동", use_container_width=True):
                     st.session_state.current_index += 1
@@ -516,10 +533,9 @@ else:
     # 🚀 백그라운드 스레드로 비동기 전송 ('2차시' 탭 식별 파라미터 포함)
     if st.session_state.student_id and not st.session_state.get("sheet_submitted", False):
         payload = {
-            "sheet_name": SHEET_TAB_NAME,        # 📌 Apps Script에서 시트명으로 활용 가능
-            "round": SHEET_TAB_NAME,             # 📌 차시 구분용 필드
+            "sheet_name": SHEET_TAB_NAME,
+            "round": SHEET_TAB_NAME,
             "student_id": st.session_state.student_id,
-            "student_name": st.session_state.student_id,
             "student_name": st.session_state.student_name,
             "score": correct_count,
             "total": total_count,
