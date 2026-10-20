@@ -14,7 +14,7 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 # ⚠️ 세션 강제 초기화 루틴 (버전 변경 시 캐시 리셋)
 # -----------------------------------------------------------------------------
-APP_VERSION = "v4_add_phoneme_questions_36q"
+APP_VERSION = "v5_add_complex_coda_37q"
 if st.session_state.get("app_version") != APP_VERSION:
     st.session_state.clear()
     st.session_state.app_version = APP_VERSION
@@ -41,7 +41,7 @@ def send_to_google_sheet_async(url, payload):
         pass
 
 # -----------------------------------------------------------------------------
-# 📚 2차시 퀴즈 데이터 (총 36문항 고정)
+# 📚 2차시 퀴즈 데이터 (총 37문항 고정)
 # -----------------------------------------------------------------------------
 RAW_QUIZ_DATA = {
     "1. 소리의 동화 (구개음화, 비음화, 유음화)": [
@@ -84,7 +84,7 @@ RAW_QUIZ_DATA = {
         {
             "id": 5,
             "type": "choice",
-            "question": "다음 중 '비음화'가 일어난 예로만 짝지어진 것은?",
+            "question": "다음 중 '비음화'가 일어난 예시로만 짝지어진 것은?",
             "options": [
                 "1. 굳이[구지], 신라[실라]",
                 "2. 국물[궁물], 닫는[단는], 밥만[밤만]"
@@ -246,6 +246,17 @@ RAW_QUIZ_DATA = {
             ],
             "answer": "1. [할따]",
             "explanation": "겹받침 'ㄾ'에서 대표음 [ㄹ]이 남고, 뒤의 어미 'ㄷ'이 된소리로 변동되어 [할따]로 발음합니다."
+        },
+        {
+            "id": 37,
+            "type": "short",
+            "question": "다음 겹받침 단어들의 올바른 표준 발음을 순서대로 적으시오: '넓게', '핥다', '훑소', '떫지' (쉼표로 구분)",
+            "answer": [
+                "널께, 할따, 훌쏘, 떨찌", "널께,할따,훌쏘,떨찌",
+                "[널께], [할따], [훌쏘], [떨찌]", "[널께],[할따],[훌쏘],[떨찌]",
+                "널께할따훌쏘떨찌"
+            ],
+            "explanation": "용언 어간의 겹받침 ‘ㄼ, ㄾ’은 자음 앞에서 원칙적으로 [ㄹ]로 발음됩니다(탈락). 이어지는 어미의 첫소리 ‘ㄱ, ㄷ, ㅅ, ㅈ’은 된소리로 바뀌므로 각각 [널께], [할따], [훌쏘], [떨찌]로 발음합니다."
         }
     ],
     "3. 소리의 첨가 & 반모음 관련 발음": [
@@ -428,7 +439,8 @@ if "student_name" not in st.session_state:
 if "user_info_submitted" not in st.session_state:
     st.session_state.user_info_submitted = False
 
-if "quiz_list" not in st.session_state or len(st.session_state.quiz_list) != 36:
+# 총 문항 수(37개) 반영
+if "quiz_list" not in st.session_state or len(st.session_state.quiz_list) != 37:
     reset_full_quiz()
 
 st.title("✏️ [국어] 소리의 변동 형성평가 (2차시)")
@@ -438,7 +450,7 @@ st.title("✏️ [국어] 소리의 변동 형성평가 (2차시)")
 # -----------------------------------------------------------------------------
 if not st.session_state.user_info_submitted:
     st.subheader("👤 감일고 학생 정보 입력 (2차시)")
-    st.write("학번과 이름을 정확히 입력하세요. 잘못 기재하면 참여하지 않은 것으로 처리됩니다. (총 36문항)")
+    st.write("학번과 이름을 정확히 입력하세요. 잘못 기재하면 참여하지 않은 것으로 처리됩니다. (총 37문항)")
     
     with st.form(key="student_info_form"):
         s_id = st.text_input("학번을 입력하세요. (예: 20101)", key="input_s_id")
