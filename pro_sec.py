@@ -443,7 +443,7 @@ if "user_info_submitted" not in st.session_state:
 if "quiz_list" not in st.session_state or len(st.session_state.quiz_list) != 37:
     reset_full_quiz()
 
-st.title("✏️ [국어] 소리의 변동 형성평가 (2차시)")
+st.title("✏️ [국어] 소리의 변동 형성평가 (2차시), 90~93쪽")
 
 # -----------------------------------------------------------------------------
 # 2. 학생 정보 입력 화면
